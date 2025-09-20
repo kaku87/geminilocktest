@@ -1,0 +1,3 @@
+com/example/optimisticlock/service/ProductServiceTest.class
+com/example/optimisticlock/controller/ProductControllerTest.class
+com/example/optimisticlock/repository/ProductRepositoryTest.class

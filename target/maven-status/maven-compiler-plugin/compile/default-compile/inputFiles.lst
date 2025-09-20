@@ -1,0 +1,13 @@
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/entity/BaseEntity.java
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/controller/GlobalExceptionHandler.java
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/repository/ProductRepository.java
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/repository/BaseRepository.java
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/controller/CrudController.java
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/controller/ProductController.java
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/entity/Product.java
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/service/ProductService.java
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/exception/OptimisticLockException.java
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/annotation/TableName.java
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/OptimisticLockApplication.java
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/repository/BaseRepositoryProvider.java
+/Users/guohaijiao/geminilocktest/src/main/java/com/example/optimisticlock/service/CrudService.java
