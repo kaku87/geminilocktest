@@ -12,9 +12,13 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+// CrudControllerのデフォルトメソッドの挙動を検証する単体テスト。
 class CrudControllerTest {
 
     @Test
+    /**
+     * createメソッドがサービスへ委譲し、201を返すことを確認する。
+     */
     void createDelegatesToServiceAndReturnsCreated() {
         CrudService<Product, ?> service = mock(CrudService.class);
         Product product = new Product();
@@ -27,6 +31,9 @@ class CrudControllerTest {
     }
 
     @Test
+    /**
+     * 対象が存在する場合にfindByIdが200とボディを返却することを確認する。
+     */
     void findByIdReturnsEntityWhenPresent() {
         CrudService<Product, ?> service = mock(CrudService.class);
         Product product = new Product();
@@ -40,6 +47,9 @@ class CrudControllerTest {
     }
 
     @Test
+    /**
+     * 対象が存在しない場合にfindByIdが404を返すことを確認する。
+     */
     void findByIdReturnsNotFoundWhenMissing() {
         CrudService<Product, ?> service = mock(CrudService.class);
         Product product = new Product();
@@ -53,6 +63,9 @@ class CrudControllerTest {
     }
 
     @Test
+    /**
+     * getAllがサービスからの結果と200ステータスを返すことを確認する。
+     */
     void getAllReturnsListFromService() {
         CrudService<Product, ?> service = mock(CrudService.class);
         Product product = new Product();
@@ -67,6 +80,9 @@ class CrudControllerTest {
     }
 
     @Test
+    /**
+     * updateがサービスを呼び出し、200を返すことを確認する。
+     */
     void updateDelegatesToServiceAndReturnsOk() {
         CrudService<Product, ?> service = mock(CrudService.class);
         Product product = new Product();
@@ -79,6 +95,9 @@ class CrudControllerTest {
     }
 
     @Test
+    /**
+     * deleteがサービスに委譲し、204を返すことを確認する。
+     */
     void deleteDelegatesToServiceAndReturnsNoContent() {
         CrudService<Product, ?> service = mock(CrudService.class);
         Product product = new Product();
@@ -90,6 +109,11 @@ class CrudControllerTest {
         assertNull(response.getBody());
     }
 
+    /**
+     * テスト専用にモックサービスを差し込むための簡易コントローラインスタンスを生成する。
+     * @param service モック化されたCrudService
+     * @return CrudControllerの匿名実装
+     */
     private CrudController<Product> controller(CrudService<Product, ?> service) {
         return new CrudController<Product>() {
             @Override
@@ -99,4 +123,3 @@ class CrudControllerTest {
         };
     }
 }
-

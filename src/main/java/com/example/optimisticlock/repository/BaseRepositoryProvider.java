@@ -18,8 +18,14 @@ import java.util.stream.Collectors;
 
 import org.apache.ibatis.builder.annotation.ProviderMethodResolver;
 
+// MyBatisの@*Providerから呼び出される共通SQLビルダー。
 public class BaseRepositoryProvider implements ProviderMethodResolver {
 
+    /**
+     * エンティティ全フィールドをINSERTするSQLを生成する。
+     * @param entity 永続化対象のエンティティ
+     * @return INSERT文
+     */
     public String insert(BaseEntity entity) {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
@@ -36,6 +42,11 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         }}.toString();
     }
 
+    /**
+     * versionとタイムスタンプを更新しながら指定エンティティを更新するSQLを生成する。
+     * @param entity 更新対象のエンティティ
+     * @return UPDATE文
+     */
     public String update(BaseEntity entity) {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
@@ -68,6 +79,11 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         }}.toString();
     }
 
+    /**
+     * 主キーとversionに基づいてレコードを削除するSQLを生成する。
+     * @param entity 削除対象のエンティティ
+     * @return DELETE文
+     */
     public String delete(BaseEntity entity) {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
@@ -91,6 +107,11 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         }}.toString();
     }
 
+    /**
+     * 主キー条件で単一レコードを検索するSQLを生成する。
+     * @param entity 検索条件を保持するエンティティ
+     * @return SELECT文
+     */
     public String findById(BaseEntity entity) {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
@@ -107,6 +128,11 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         return sql.toString();
     }
 
+    /**
+     * マッパー型情報からエンティティクラスを特定し、全件取得のSQLを作成する。
+     * @param context MyBatisが提供するプロバイダーコンテキスト
+     * @return SELECT文
+     */
     public String findAll(ProviderContext context) {
         Class<?> entityClass = getEntityClass(context);
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
@@ -122,6 +148,11 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
     }
 
 
+    /**
+     * 継承階層も含めて@Idが付与されたフィールドを収集する。
+     * @param clazz 解析対象のクラス
+     * @return @Idフィールドのリスト
+     */
     private List<Field> findIdFields(Class<?> clazz) {
         List<Field> idFields = new ArrayList<>();
         for (Field field : getAllFields(clazz)) {
@@ -135,6 +166,11 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         return idFields;
     }
 
+    /**
+     * 指定クラスとスーパークラスから全フィールドリストを取得する。
+     * @param clazz 解析対象のクラス
+     * @return フィールド配列
+     */
     private Field[] getAllFields(Class<?> clazz) {
         List<Field> fields = new ArrayList<>();
         while (clazz != null) {
@@ -144,6 +180,11 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         return fields.toArray(new Field[0]);
     }
 
+    /**
+     * camelCaseのプロパティ名をスネークケースのカラム名へ変換する。
+     * @param str プロパティ名
+     * @return スネークケースへ変換した文字列
+     */
     private static String camelToSnake(String str) {
         if (str == null) {
             return null;
@@ -151,6 +192,11 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         return str.replaceAll("([a-z])([A-Z]+)", "$1_$2").toLowerCase();
     }
 
+    /**
+     * 単一エンティティの楽観ロックチェック用SELECTを生成する。
+     * @param entity 楽観ロック検証対象のエンティティ
+     * @return SELECT文
+     */
     public String checkUpdate(BaseEntity entity) {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
@@ -175,6 +221,11 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         }}.toString();
     }
 
+    /**
+     * 複数エンティティのversionをまとめて確認するためのSELECTを生成する。
+     * @param entities 楽観ロック検証対象エンティティのリスト
+     * @return SELECT文
+     */
     public String checkUpdateList(List<BaseEntity> entities) {
         if (entities == null || entities.isEmpty()) {
             return "SELECT 0";
@@ -216,38 +267,39 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         return sql.toString();
     }
 
+    /**
+     * BaseRepository<T>の型引数として宣言されたエンティティ型を取得する。
+     * @param context MyBatisが提供するプロバイダーコンテキスト
+     * @return エンティティクラス
+     */
     private Class<?> getEntityClass(ProviderContext context) {
-        Type[] genericInterfaces = context.getMapperType().getGenericInterfaces();
-        for (Type genericInterface : genericInterfaces) {
-            if (genericInterface instanceof ParameterizedType) {
-                ParameterizedType parameterizedType = (ParameterizedType) genericInterface;
-                if (parameterizedType.getRawType().equals(BaseRepository.class)) {
-                    Type type = parameterizedType.getActualTypeArguments()[0];
-                    if (type instanceof Class) {
-                        return (Class<?>) type;
-                    }
+        // Every repository is expected to implement BaseRepository<T>; walk the type hierarchy until we find that T.
+        for (Class<?> type = context.getMapperType(); type != null; type = type.getSuperclass()) {
+            for (Type genericInterface : type.getGenericInterfaces()) {
+                Class<?> entityClass = resolveEntityClass(genericInterface);
+                if (entityClass != null) {
+                    return entityClass;
                 }
             }
         }
-        // Fallback for searching superclass hierarchy
-        Class<?> mapperClass = context.getMapperType();
-        while(mapperClass != null) {
-            genericInterfaces = mapperClass.getGenericInterfaces();
-            for (Type genericInterface : genericInterfaces) {
-                if (genericInterface instanceof ParameterizedType) {
-                    ParameterizedType parameterizedType = (ParameterizedType) genericInterface;
-                    if (parameterizedType.getRawType().equals(BaseRepository.class)) {
-                        Type type = parameterizedType.getActualTypeArguments()[0];
-                        if (type instanceof Class) {
-                            return (Class<?>) type;
-                        }
-                    }
-                }
-            }
-            mapperClass = mapperClass.getSuperclass();
-        }
-
-
         throw new RuntimeException("Could not determine entity class for " + context.getMapperType().getName());
+    }
+
+    /**
+     * BaseRepository<T>型からエンティティクラスを抽出する補助メソッド。
+     * @param candidate 解析対象の型情報
+     * @return 抽出されたエンティティクラス、存在しない場合はnull
+     */
+    private Class<?> resolveEntityClass(Type candidate) {
+        if (candidate instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) candidate;
+            if (BaseRepository.class.equals(parameterizedType.getRawType())) {
+                Type actualType = parameterizedType.getActualTypeArguments()[0];
+                if (actualType instanceof Class) {
+                    return (Class<?>) actualType;
+                }
+            }
+        }
+        return null;
     }
 }
