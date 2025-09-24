@@ -1,14 +1,10 @@
-com/example/optimisticlock/service/ProductService.class
 com/example/optimisticlock/repository/BaseRepositoryProvider$4.class
 com/example/optimisticlock/repository/BaseRepositoryProvider$5.class
 com/example/optimisticlock/annotation/TableName.class
 com/example/optimisticlock/repository/BaseRepositoryProvider$3.class
-com/example/optimisticlock/controller/ProductController.class
 com/example/optimisticlock/service/CrudService.class
 com/example/optimisticlock/controller/CrudController.class
 com/example/optimisticlock/entity/BaseEntity.class
-com/example/optimisticlock/repository/ProductRepository.class
-com/example/optimisticlock/entity/Product.class
 com/example/optimisticlock/repository/BaseRepositoryProvider$1.class
 com/example/optimisticlock/exception/OptimisticLockException.class
 com/example/optimisticlock/repository/BaseRepositoryProvider$2.class

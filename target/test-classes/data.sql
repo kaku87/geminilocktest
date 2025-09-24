@@ -1,2 +1,0 @@
-INSERT INTO product (id, tenant_id, name, price, version, created_by, created_time, updated_by, updated_time, is_deleted)
-VALUES (1, 'default', 'Test Product', 10.0, 0, 'test', '2025-09-20 12:00:00', 'test', '2025-09-20 12:00:00', 0);

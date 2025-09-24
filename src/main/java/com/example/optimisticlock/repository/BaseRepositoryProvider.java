@@ -8,6 +8,7 @@ import org.apache.ibatis.jdbc.SQL;
 import org.apache.ibatis.annotations.Param;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -174,7 +175,11 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
     private Field[] getAllFields(Class<?> clazz) {
         List<Field> fields = new ArrayList<>();
         while (clazz != null) {
-            fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
+            Arrays.stream(clazz.getDeclaredFields())
+                .filter(field -> !Modifier.isStatic(field.getModifiers()))
+                .filter(field -> !field.isSynthetic())
+                .filter(field -> !field.getName().startsWith("$jacoco"))
+                .forEach(fields::add);
             clazz = clazz.getSuperclass();
         }
         return fields.toArray(new Field[0]);

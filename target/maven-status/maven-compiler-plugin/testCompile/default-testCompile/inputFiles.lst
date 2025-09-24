@@ -1,4 +1,4 @@
+/Users/guohaijiao/geminilocktest/src/test/java/com/example/optimisticlock/repository/BaseRepositoryProviderTest.java
 /Users/guohaijiao/geminilocktest/src/test/java/com/example/optimisticlock/controller/CrudControllerTest.java
-/Users/guohaijiao/geminilocktest/src/test/java/com/example/optimisticlock/service/ProductServiceTest.java
-/Users/guohaijiao/geminilocktest/src/test/java/com/example/optimisticlock/controller/ProductControllerTest.java
-/Users/guohaijiao/geminilocktest/src/test/java/com/example/optimisticlock/repository/ProductRepositoryTest.java
+/Users/guohaijiao/geminilocktest/src/test/java/com/example/optimisticlock/service/CrudServiceDefaultTest.java
+/Users/guohaijiao/geminilocktest/src/test/java/com/example/optimisticlock/controller/GlobalExceptionHandlerTest.java

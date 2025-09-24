@@ -1,7 +1,9 @@
 package com.example.optimisticlock.controller;
 
-import com.example.optimisticlock.entity.Product;
+import com.example.optimisticlock.entity.BaseEntity;
 import com.example.optimisticlock.service.CrudService;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,113 +15,134 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 // CrudControllerのデフォルトメソッドの挙動を検証する単体テスト。
+@DisplayName("CrudControllerのデフォルト実装")
 class CrudControllerTest {
 
-    @Test
-    /**
-     * createメソッドがサービスへ委譲し、201を返すことを確認する。
-     */
-    void createDelegatesToServiceAndReturnsCreated() {
-        CrudService<Product, ?> service = mock(CrudService.class);
-        Product product = new Product();
+    @Nested
+    @DisplayName("create")
+    class Create {
 
-        ResponseEntity<Product> response = controller(service).create(product);
+        @Test
+        @DisplayName("正常系")
+        void normal() {
+            CrudService<DummyEntity, ?> service = mock(CrudService.class);
+            DummyEntity entity = new DummyEntity();
 
-        verify(service).insert(product);
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertSame(product, response.getBody());
+            ResponseEntity<DummyEntity> response = controller(service).create(entity);
+
+            verify(service).insert(entity);
+            assertEquals(HttpStatus.CREATED, response.getStatusCode());
+            assertSame(entity, response.getBody());
+        }
     }
 
-    @Test
-    /**
-     * 対象が存在する場合にfindByIdが200とボディを返却することを確認する。
-     */
-    void findByIdReturnsEntityWhenPresent() {
-        CrudService<Product, ?> service = mock(CrudService.class);
-        Product product = new Product();
-        when(service.findById(product)).thenReturn(product);
+    @Nested
+    @DisplayName("findById")
+    class FindById {
 
-        ResponseEntity<Product> response = controller(service).findById(product);
+        @Test
+        @DisplayName("正常系")
+        void normal() {
+            CrudService<DummyEntity, ?> service = mock(CrudService.class);
+            DummyEntity entity = new DummyEntity();
+            when(service.findById(entity)).thenReturn(entity);
 
-        verify(service).findById(product);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertSame(product, response.getBody());
+            ResponseEntity<DummyEntity> response = controller(service).findById(entity);
+
+            verify(service).findById(entity);
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertSame(entity, response.getBody());
+        }
+
+        @Test
+        @DisplayName("対象未存在_異常系")
+        void notFound() {
+            CrudService<DummyEntity, ?> service = mock(CrudService.class);
+            DummyEntity entity = new DummyEntity();
+            when(service.findById(entity)).thenReturn(null);
+
+            ResponseEntity<DummyEntity> response = controller(service).findById(entity);
+
+            verify(service).findById(entity);
+            assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+            assertNull(response.getBody());
+        }
     }
 
-    @Test
-    /**
-     * 対象が存在しない場合にfindByIdが404を返すことを確認する。
-     */
-    void findByIdReturnsNotFoundWhenMissing() {
-        CrudService<Product, ?> service = mock(CrudService.class);
-        Product product = new Product();
-        when(service.findById(product)).thenReturn(null);
+    @Nested
+    @DisplayName("getAll")
+    class GetAll {
 
-        ResponseEntity<Product> response = controller(service).findById(product);
+        @Test
+        @DisplayName("正常系")
+        void normal() {
+            CrudService<DummyEntity, ?> service = mock(CrudService.class);
+            DummyEntity entity = new DummyEntity();
+            List<DummyEntity> entities = Collections.singletonList(entity);
+            when(service.findAll()).thenReturn(entities);
 
-        verify(service).findById(product);
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertNull(response.getBody());
+            ResponseEntity<List<DummyEntity>> response = controller(service).getAll();
+
+            verify(service).findAll();
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(entities, response.getBody());
+        }
     }
 
-    @Test
-    /**
-     * getAllがサービスからの結果と200ステータスを返すことを確認する。
-     */
-    void getAllReturnsListFromService() {
-        CrudService<Product, ?> service = mock(CrudService.class);
-        Product product = new Product();
-        List<Product> products = Collections.singletonList(product);
-        when(service.findAll()).thenReturn(products);
+    @Nested
+    @DisplayName("update")
+    class Update {
 
-        ResponseEntity<List<Product>> response = controller(service).getAll();
+        @Test
+        @DisplayName("正常系")
+        void normal() {
+            CrudService<DummyEntity, ?> service = mock(CrudService.class);
+            DummyEntity entity = new DummyEntity();
 
-        verify(service).findAll();
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(products, response.getBody());
+            ResponseEntity<DummyEntity> response = controller(service).update(entity);
+
+            verify(service).update(entity);
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertSame(entity, response.getBody());
+        }
     }
 
-    @Test
-    /**
-     * updateがサービスを呼び出し、200を返すことを確認する。
-     */
-    void updateDelegatesToServiceAndReturnsOk() {
-        CrudService<Product, ?> service = mock(CrudService.class);
-        Product product = new Product();
+    @Nested
+    @DisplayName("delete")
+    class Delete {
 
-        ResponseEntity<Product> response = controller(service).update(product);
+        @Test
+        @DisplayName("正常系")
+        void normal() {
+            CrudService<DummyEntity, ?> service = mock(CrudService.class);
+            DummyEntity entity = new DummyEntity();
 
-        verify(service).update(product);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertSame(product, response.getBody());
+            ResponseEntity<Void> response = controller(service).delete(entity);
+
+            verify(service).delete(entity);
+            assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+            assertNull(response.getBody());
+        }
     }
 
-    @Test
-    /**
-     * deleteがサービスに委譲し、204を返すことを確認する。
-     */
-    void deleteDelegatesToServiceAndReturnsNoContent() {
-        CrudService<Product, ?> service = mock(CrudService.class);
-        Product product = new Product();
-
-        ResponseEntity<Void> response = controller(service).delete(product);
-
-        verify(service).delete(product);
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-        assertNull(response.getBody());
-    }
-
-    /**
-     * テスト専用にモックサービスを差し込むための簡易コントローラインスタンスを生成する。
-     * @param service モック化されたCrudService
-     * @return CrudControllerの匿名実装
-     */
-    private CrudController<Product> controller(CrudService<Product, ?> service) {
-        return new CrudController<Product>() {
+    private CrudController<DummyEntity> controller(CrudService<DummyEntity, ?> service) {
+        return new CrudController<DummyEntity>() {
             @Override
-            public CrudService<Product, ?> getService() {
+            public CrudService<DummyEntity, ?> getService() {
                 return service;
             }
         };
+    }
+
+    private static class DummyEntity extends BaseEntity {
+        private Long id;
+
+        Long getId() {
+            return id;
+        }
+
+        void setId(Long id) {
+            this.id = id;
+        }
     }
 }

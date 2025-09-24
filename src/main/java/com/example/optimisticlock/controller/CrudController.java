@@ -17,7 +17,7 @@ public interface CrudController<T extends BaseEntity> {
      */
     CrudService<T, ?> getService();
 
-    @PostMapping
+    @PostMapping("/create")
     /**
      * 新規登録処理。作成したエンティティを保存し、201 CREATEDを返す。
      * @param entity 登録対象のエンティティ
@@ -28,7 +28,7 @@ public interface CrudController<T extends BaseEntity> {
         return new ResponseEntity<>(entity, HttpStatus.CREATED);
     }
 
-    @PostMapping("/query")
+    @PostMapping("/findById")
     /**
      * IDに該当するエンティティを検索し、存在すれば200、なければ404を返す。
      * @param entity 検索条件を保持したエンティティ
@@ -42,7 +42,7 @@ public interface CrudController<T extends BaseEntity> {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @GetMapping
+    @PostMapping("/getAll")
     /**
      * 全件取得処理。サービスから結果を取得して200で返す。
      * @return 登録済みエンティティの一覧とステータス
@@ -52,7 +52,7 @@ public interface CrudController<T extends BaseEntity> {
         return new ResponseEntity<>(entities, HttpStatus.OK);
     }
 
-    @PutMapping
+    @PostMapping("/update")
     /**
      * 更新処理。楽観ロック例外はサービス側で制御される。
      * @param entity 更新対象のエンティティ
@@ -63,7 +63,7 @@ public interface CrudController<T extends BaseEntity> {
         return new ResponseEntity<>(entity, HttpStatus.OK);
     }
 
-    @DeleteMapping
+    @PostMapping("/delete")
     /**
      * 削除処理。削除後は204 NO_CONTENTを返却する。
      * @param entity 削除対象のエンティティ
