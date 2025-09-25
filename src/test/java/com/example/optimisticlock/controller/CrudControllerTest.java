@@ -25,7 +25,7 @@ class CrudControllerTest {
         @Test
         @DisplayName("正常系")
         void normal() {
-            CrudService<DummyEntity, ?> service = mock(CrudService.class);
+            CrudService<DummyEntity, ?> service = mockService();
             DummyEntity entity = new DummyEntity();
 
             ResponseEntity<DummyEntity> response = controller(service).create(entity);
@@ -43,7 +43,7 @@ class CrudControllerTest {
         @Test
         @DisplayName("正常系")
         void normal() {
-            CrudService<DummyEntity, ?> service = mock(CrudService.class);
+            CrudService<DummyEntity, ?> service = mockService();
             DummyEntity entity = new DummyEntity();
             when(service.findById(entity)).thenReturn(entity);
 
@@ -57,7 +57,7 @@ class CrudControllerTest {
         @Test
         @DisplayName("対象未存在_異常系")
         void notFound() {
-            CrudService<DummyEntity, ?> service = mock(CrudService.class);
+            CrudService<DummyEntity, ?> service = mockService();
             DummyEntity entity = new DummyEntity();
             when(service.findById(entity)).thenReturn(null);
 
@@ -76,7 +76,7 @@ class CrudControllerTest {
         @Test
         @DisplayName("正常系")
         void normal() {
-            CrudService<DummyEntity, ?> service = mock(CrudService.class);
+            CrudService<DummyEntity, ?> service = mockService();
             DummyEntity entity = new DummyEntity();
             List<DummyEntity> entities = Collections.singletonList(entity);
             when(service.findAll()).thenReturn(entities);
@@ -96,7 +96,7 @@ class CrudControllerTest {
         @Test
         @DisplayName("正常系")
         void normal() {
-            CrudService<DummyEntity, ?> service = mock(CrudService.class);
+            CrudService<DummyEntity, ?> service = mockService();
             DummyEntity entity = new DummyEntity();
 
             ResponseEntity<DummyEntity> response = controller(service).update(entity);
@@ -114,7 +114,7 @@ class CrudControllerTest {
         @Test
         @DisplayName("正常系")
         void normal() {
-            CrudService<DummyEntity, ?> service = mock(CrudService.class);
+            CrudService<DummyEntity, ?> service = mockService();
             DummyEntity entity = new DummyEntity();
 
             ResponseEntity<Void> response = controller(service).delete(entity);
@@ -134,15 +134,14 @@ class CrudControllerTest {
         };
     }
 
+    private CrudService<DummyEntity, ?> mockService() {
+        @SuppressWarnings("unchecked")
+        CrudService<DummyEntity, ?> service = (CrudService<DummyEntity, ?>) mock(CrudService.class);
+        return service;
+    }
+
     private static class DummyEntity extends BaseEntity {
+        @SuppressWarnings("unused")
         private Long id;
-
-        Long getId() {
-            return id;
-        }
-
-        void setId(Long id) {
-            this.id = id;
-        }
     }
 }

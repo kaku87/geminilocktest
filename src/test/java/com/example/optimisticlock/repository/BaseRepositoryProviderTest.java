@@ -2,6 +2,7 @@ package com.example.optimisticlock.repository;
 
 import com.example.optimisticlock.annotation.TableName;
 import com.example.optimisticlock.entity.BaseEntity;
+import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -105,7 +106,7 @@ class BaseRepositoryProviderTest {
         @Test
         @DisplayName("正常系")
         void normal() {
-            String sql = provider.findAll(newProviderContext());
+            String sql = provider.findAll(ProviderContextFactory.create(DummyRepository.class));
 
             assertEquals("SELECT * FROM test_entity", squash(sql));
         }
@@ -171,15 +172,32 @@ class BaseRepositoryProviderTest {
 
     private interface DummyRepository extends BaseRepository<TestEntity> {}
 
-    private org.apache.ibatis.builder.annotation.ProviderContext newProviderContext() {
-        try {
-            Constructor<org.apache.ibatis.builder.annotation.ProviderContext> constructor =
-                org.apache.ibatis.builder.annotation.ProviderContext.class.getDeclaredConstructor(
-                    Class.class, java.lang.reflect.Method.class, String.class);
-            constructor.setAccessible(true);
-            return constructor.newInstance(DummyRepository.class, null, null);
-        } catch (Exception ex) {
-            throw new IllegalStateException("Failed to instantiate ProviderContext", ex);
+    /**
+     * MyBatisのProviderContextはパッケージプライベートなコンストラクターしか持たないため、
+     * テストではリフレクションを介して生成するヘルパーを用意する。
+     */
+    private static final class ProviderContextFactory {
+        private static final Constructor<ProviderContext> CONSTRUCTOR;
+
+        static {
+            try {
+                CONSTRUCTOR = ProviderContext.class
+                    .getDeclaredConstructor(Class.class, java.lang.reflect.Method.class, String.class);
+                CONSTRUCTOR.setAccessible(true);
+            } catch (Exception ex) {
+                throw new IllegalStateException("Failed to prepare ProviderContext constructor", ex);
+            }
+        }
+
+        private ProviderContextFactory() {
+        }
+
+        static ProviderContext create(Class<?> mapperType) {
+            try {
+                return CONSTRUCTOR.newInstance(mapperType, null, null);
+            } catch (Exception ex) {
+                throw new IllegalStateException("Failed to instantiate ProviderContext", ex);
+            }
         }
     }
 }
