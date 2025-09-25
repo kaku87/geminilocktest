@@ -24,7 +24,9 @@ class CrudServiceDefaultTest {
 
     @BeforeEach
     void setUp() {
-        repository = mock(BaseRepository.class);
+        @SuppressWarnings("unchecked")
+        BaseRepository<DummyEntity> mockRepository = mock(BaseRepository.class);
+        repository = mockRepository;
         service = new CrudService<DummyEntity, BaseRepository<DummyEntity>>() {
             @Override
             public BaseRepository<DummyEntity> getRepository() {
@@ -132,6 +134,13 @@ class CrudServiceDefaultTest {
         @DisplayName("空リスト_正常系")
         void emptyList() {
             service.checkUpdateList(Collections.emptyList());
+            verify(repository, never()).checkUpdateList(anyList());
+        }
+
+        @Test
+        @DisplayName("null_正常系")
+        void nullList() {
+            service.checkUpdateList(null);
             verify(repository, never()).checkUpdateList(anyList());
         }
 

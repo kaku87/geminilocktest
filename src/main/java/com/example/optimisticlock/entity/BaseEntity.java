@@ -4,13 +4,19 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-// 監査情報やバージョン管理など全エンティティ共通の属性を保持する基底クラス。
+// 監査情報など全エンティティ共通の属性を保持する基底クラス。
 @Data
 public abstract class BaseEntity {
 
-    // 最終更新日時を格納する共通フィールド。
-    private LocalDateTime zzcmnFdate;
+    // 登録者名
+    private String zzcmnCname;
 
-    // 楽観ロック用のバージョン番号。
-    private Integer version;
+    // 登録日時
+    private LocalDateTime zzcmnCdate;
+
+    // 最終更新者名
+    private String zzcmnFname;
+
+    // 最終更新日時
+    private LocalDateTime zzcmnFdate;
 }

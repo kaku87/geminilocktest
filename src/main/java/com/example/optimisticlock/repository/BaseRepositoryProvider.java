@@ -31,7 +31,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RuntimeException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
         }
         String tableName = tableNameAnnotation.value();
 
@@ -44,7 +44,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
     }
 
     /**
-     * versionとタイムスタンプを更新しながら指定エンティティを更新するSQLを生成する。
+     * 更新者情報とタイムスタンプを反映しながら指定エンティティを更新するSQLを生成する。
      * @param entity 更新対象のエンティティ
      * @return UPDATE文
      */
@@ -52,7 +52,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RuntimeException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
         }
         String tableName = tableNameAnnotation.value();
 
@@ -62,12 +62,14 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
             UPDATE(tableName);
 
             String setClauses = Arrays.stream(getAllFields(entityClass))
-                .filter(field -> !field.isAnnotationPresent(Id.class) && !field.getName().equals("zzcmnFdate") && !field.getName().equals("version"))
+                .filter(field -> !field.isAnnotationPresent(Id.class))
+                .filter(field -> !field.getName().equals("zzcmnFdate"))
+                .filter(field -> !field.getName().equals("zzcmnCname"))
+                .filter(field -> !field.getName().equals("zzcmnCdate"))
                 .map(field -> camelToSnake(field.getName()) + " = #{" + field.getName() + "}")
                 .collect(Collectors.joining(", "));
 
             SET(setClauses);
-            SET("version = version + 1");
             SET("zzcmn_fdate = NOW()");
 
             for (Field idField : idFields) {
@@ -75,13 +77,11 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
                 String idFieldName = idField.getName();
                 WHERE(idColumnName + " = #{" + idFieldName + "}");
             }
-
-            WHERE("version = #{version}");
         }}.toString();
     }
 
     /**
-     * 主キーとversionに基づいてレコードを削除するSQLを生成する。
+     * 主キーに基づいてレコードを削除するSQLを生成する。
      * @param entity 削除対象のエンティティ
      * @return DELETE文
      */
@@ -89,7 +89,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RuntimeException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
         }
         String tableName = tableNameAnnotation.value();
 
@@ -103,8 +103,6 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
                 String idFieldName = idField.getName();
                 WHERE(idColumnName + " = #{" + idFieldName + "}");
             }
-
-            WHERE("version = #{version}");
         }}.toString();
     }
 
@@ -117,7 +115,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RuntimeException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
         }
         String tableName = tableNameAnnotation.value();
 
@@ -138,7 +136,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = getEntityClass(context);
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RuntimeException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
         }
         String tableName = tableNameAnnotation.value();
 
@@ -162,7 +160,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
             }
         }
         if (idFields.isEmpty()) {
-            throw new RuntimeException("No @Id annotation found in class " + clazz.getName() + " or its superclasses.");
+            throw new RepositoryConfigurationException("No @Id annotation found in class " + clazz.getName() + " or its superclasses.");
         }
         return idFields;
     }
@@ -206,7 +204,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RuntimeException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
         }
         String tableName = tableNameAnnotation.value();
 
@@ -222,12 +220,12 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
                 WHERE(idColumnName + " = #{" + idFieldName + "}");
             }
 
-            WHERE("version = #{version}");
+            WHERE("zzcmn_fdate = #{zzcmnFdate}");
         }}.toString();
     }
 
     /**
-     * 複数エンティティのversionをまとめて確認するためのSELECTを生成する。
+     * 複数エンティティの最終更新日時をまとめて確認するためのSELECTを生成する。
      * @param entities 楽観ロック検証対象エンティティのリスト
      * @return SELECT文
      */
@@ -240,7 +238,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RuntimeException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
         }
         String tableName = tableNameAnnotation.value();
 
@@ -261,7 +259,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
             for (Field idField : idFields) {
                 conditions.add(camelToSnake(idField.getName()) + " = #{list[" + i + "]." + idField.getName() + "}");
             }
-            conditions.add("version = #{list[" + i + "].version}");
+            conditions.add("zzcmn_fdate = #{list[" + i + "].zzcmnFdate}");
             whereClause.append(String.join(" AND ", conditions));
             whereClause.append(")");
         }
@@ -287,7 +285,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
                 }
             }
         }
-        throw new RuntimeException("Could not determine entity class for " + context.getMapperType().getName());
+        throw new RepositoryConfigurationException("Could not determine entity class for " + context.getMapperType().getName());
     }
 
     /**

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.persistence.Id;
 import java.lang.reflect.Constructor;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -33,8 +34,14 @@ class BaseRepositoryProviderTest {
             String sql = provider.insert(entity);
 
             assertTrue(sql.startsWith("INSERT INTO test_entity"));
-            assertEquals(new HashSet<>(Arrays.asList("id", "value", "zzcmn_fdate", "version")),
-                    extractColumns(sql));
+            assertEquals(new HashSet<>(Arrays.asList(
+                "id",
+                "value",
+                "zzcmn_cname",
+                "zzcmn_cdate",
+                "zzcmn_fname",
+                "zzcmn_fdate"
+            )), extractColumns(sql));
         }
     }
 
@@ -52,7 +59,6 @@ class BaseRepositoryProviderTest {
 
             assertTrue(normalized.startsWith("UPDATE test_entity"), normalized);
             assertFalse(normalized.contains("SET id ="), normalized);
-            assertTrue(normalized.contains("version = version + 1"), normalized);
             assertTrue(normalized.contains("zzcmn_fdate = NOW()"), normalized);
         }
     }
@@ -71,7 +77,7 @@ class BaseRepositoryProviderTest {
 
             assertTrue(normalized.startsWith("DELETE FROM test_entity"), normalized);
             assertTrue(normalized.contains("id = #{id}"), normalized);
-            assertTrue(normalized.contains("version = #{version}"), normalized);
+            assertFalse(normalized.contains("version"), normalized);
         }
     }
 
@@ -118,7 +124,7 @@ class BaseRepositoryProviderTest {
 
             assertTrue(normalized.startsWith("SELECT COUNT(1) FROM test_entity"));
             assertTrue(normalized.contains("id = #{list[0].id}"));
-            assertTrue(normalized.contains("version = #{list[0].version}"));
+            assertTrue(normalized.contains("zzcmn_fdate = #{list[0].zzcmnFdate}"));
         }
     }
 
