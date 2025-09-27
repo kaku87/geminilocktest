@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import javax.persistence.Id;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -85,9 +87,7 @@ class BaseRepositoryProviderTest {
         @Test
         @DisplayName("SELECT(全件)")
         void findAllResolvesEntityClassViaContext() {
-            BaseRepositoryProvider stubProvider = new StubProvider(TestEntity.class);
-
-            String sql = stubProvider.findAll(null);
+            String sql = provider.findAll(createProviderContext(TestRepository.class));
 
             assertEquals("SELECT * FROM test_entity", squash(sql));
         }
@@ -144,13 +144,35 @@ class BaseRepositoryProviderTest {
         @Test
         @DisplayName("エンティティ解決不可_異常系")
         void entityClassUnknown() {
-            RepositoryConfigurationException expected = new RepositoryConfigurationException(
-                "repository.entityClassUnknown", "dummy");
-            BaseRepositoryProvider stubProvider = new StubProvider(expected);
-
             RepositoryConfigurationException ex = assertThrows(RepositoryConfigurationException.class,
-                () -> stubProvider.findAll(null));
-            assertEquals(expected.getMessage(), ex.getMessage());
+                () -> provider.findAll(createProviderContext(String.class)));
+            assertTrue(ex.getMessage().contains(String.class.getName()));
+        }
+    }
+
+    @Nested
+    @DisplayName("getEntityClass")
+    class GetEntityClass {
+
+        @Test
+        @DisplayName("正常系")
+        void resolvesEntityFromMapper() {
+            ExposedProvider exposedProvider = new ExposedProvider();
+            Class<?> entityClass = exposedProvider.expose(getContext(TestRepository.class));
+            assertEquals(TestEntity.class, entityClass);
+        }
+
+        @Test
+        @DisplayName("解決不可_異常系")
+        void throwsWhenEntityUnknown() {
+            ExposedProvider exposedProvider = new ExposedProvider();
+            RepositoryConfigurationException ex = assertThrows(RepositoryConfigurationException.class,
+                () -> exposedProvider.expose(getContext(String.class)));
+            assertTrue(ex.getMessage().contains(String.class.getName()));
+        }
+
+        private ProviderContext getContext(Class<?> type) {
+            return createProviderContext(type);
         }
     }
 
@@ -207,26 +229,20 @@ class BaseRepositoryProviderTest {
         private String value;
     }
 
-    private static class StubProvider extends BaseRepositoryProvider {
-        private final Class<?> entityClass;
-        private final RepositoryConfigurationException forcedException;
-
-        StubProvider(Class<?> entityClass) {
-            this.entityClass = entityClass;
-            this.forcedException = null;
+    private ProviderContext createProviderContext(Class<?> mapperType) {
+        try {
+            Constructor<ProviderContext> constructor = ProviderContext.class
+                .getDeclaredConstructor(Class.class, Method.class, String.class);
+            constructor.setAccessible(true);
+            return constructor.newInstance(mapperType, null, null);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to instantiate ProviderContext", ex);
         }
+    }
 
-        StubProvider(RepositoryConfigurationException forcedException) {
-            this.entityClass = null;
-            this.forcedException = forcedException;
-        }
-
-        @Override
-        protected Class<?> getEntityClass(ProviderContext context) {
-            if (forcedException != null) {
-                throw forcedException;
-            }
-            return entityClass;
+    private static class ExposedProvider extends BaseRepositoryProvider {
+        Class<?> expose(ProviderContext context) {
+            return getEntityClass(context);
         }
     }
 }
