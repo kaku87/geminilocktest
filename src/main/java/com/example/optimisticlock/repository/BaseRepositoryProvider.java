@@ -70,7 +70,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
                 .collect(Collectors.joining(", "));
 
             SET(setClauses);
-            SET("zzcmn_fdate = NOW()");
+            SET("ZZCMN_FDATE = NOW()");
 
             for (Field idField : idFields) {
                 String idColumnName = camelToSnake(idField.getName());
@@ -192,7 +192,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         if (str == null) {
             return null;
         }
-        return str.replaceAll("([a-z])([A-Z]+)", "$1_$2").toLowerCase();
+        return str.replaceAll("([a-z])([A-Z]+)", "$1_$2").toUpperCase();
     }
 
     /**
@@ -220,7 +220,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
                 WHERE(idColumnName + " = #{" + idFieldName + "}");
             }
 
-            WHERE("zzcmn_fdate = #{zzcmnFdate}");
+            WHERE("ZZCMN_FDATE = #{zzcmnFdate}");
         }}.toString();
     }
 
@@ -259,7 +259,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
             for (Field idField : idFields) {
                 conditions.add(camelToSnake(idField.getName()) + " = #{list[" + i + "]." + idField.getName() + "}");
             }
-            conditions.add("zzcmn_fdate = #{list[" + i + "].zzcmnFdate}");
+            conditions.add("ZZCMN_FDATE = #{list[" + i + "].zzcmnFdate}");
             whereClause.append(String.join(" AND ", conditions));
             whereClause.append(")");
         }

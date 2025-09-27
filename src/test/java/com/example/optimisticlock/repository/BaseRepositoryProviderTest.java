@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.persistence.Id;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -34,12 +35,12 @@ class BaseRepositoryProviderTest {
 
             assertTrue(sql.startsWith("INSERT INTO test_entity"));
             assertEquals(new HashSet<>(Arrays.asList(
-                "id",
-                "value",
-                "zzcmn_cname",
-                "zzcmn_cdate",
-                "zzcmn_fname",
-                "zzcmn_fdate"
+                "ID",
+                "VALUE",
+                "ZZCMN_CNAME",
+                "ZZCMN_CDATE",
+                "ZZCMN_FNAME",
+                "ZZCMN_FDATE"
             )), extractColumns(sql));
         }
 
@@ -51,10 +52,10 @@ class BaseRepositoryProviderTest {
             String normalized = squash(provider.update(entity));
 
             assertTrue(normalized.startsWith("UPDATE test_entity"));
-            assertTrue(normalized.contains("value = #{value}"));
-            assertTrue(normalized.contains("zzcmn_fname = #{zzcmnFname}"));
-            assertFalse(normalized.contains("zzcmn_cname"));
-            assertTrue(normalized.contains("zzcmn_fdate = NOW()"));
+            assertTrue(normalized.contains("VALUE = #{value}"));
+            assertTrue(normalized.contains("ZZCMN_FNAME = #{zzcmnFname}"));
+            assertFalse(normalized.contains("ZZCMN_CNAME"));
+            assertTrue(normalized.contains("ZZCMN_FDATE = NOW()"));
             assertFalse(normalized.contains("version"));
         }
 
@@ -66,7 +67,7 @@ class BaseRepositoryProviderTest {
             String normalized = squash(provider.delete(entity));
 
             assertTrue(normalized.startsWith("DELETE FROM test_entity"));
-            assertTrue(normalized.contains("id = #{id}"));
+            assertTrue(normalized.contains("ID = #{id}"));
             assertFalse(normalized.contains("version"));
         }
 
@@ -78,7 +79,7 @@ class BaseRepositoryProviderTest {
             String normalized = squash(provider.findById(entity));
 
             assertTrue(normalized.startsWith("SELECT * FROM test_entity"));
-            assertTrue(normalized.contains("id = #{id}"));
+            assertTrue(normalized.contains("ID = #{id}"));
         }
 
         @Test
@@ -99,8 +100,22 @@ class BaseRepositoryProviderTest {
             String normalized = squash(provider.checkUpdateList(List.of(entity)));
 
             assertTrue(normalized.startsWith("SELECT COUNT(1) FROM test_entity"));
-            assertTrue(normalized.contains("id = #{list[0].id}"));
-            assertTrue(normalized.contains("zzcmn_fdate = #{list[0].zzcmnFdate}"));
+            assertTrue(normalized.contains("ID = #{list[0].id}"));
+            assertTrue(normalized.contains("ZZCMN_FDATE = #{list[0].zzcmnFdate}"));
+        }
+
+        @Test
+        @DisplayName("checkUpdateList 空リスト")
+        void checkUpdateListReturnsSelectZeroWhenEmpty() {
+            String sql = provider.checkUpdateList(Collections.emptyList());
+            assertEquals("SELECT 0", sql);
+        }
+
+        @Test
+        @DisplayName("checkUpdateList null")
+        void checkUpdateListReturnsSelectZeroWhenNull() {
+            String sql = provider.checkUpdateList(null);
+            assertEquals("SELECT 0", sql);
         }
     }
 
