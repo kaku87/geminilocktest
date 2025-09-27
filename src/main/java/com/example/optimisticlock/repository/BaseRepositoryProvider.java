@@ -31,7 +31,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("repository.tableNameMissing", entityClass.getName());
         }
         String tableName = tableNameAnnotation.value();
 
@@ -52,7 +52,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("repository.tableNameMissing", entityClass.getName());
         }
         String tableName = tableNameAnnotation.value();
 
@@ -89,7 +89,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("repository.tableNameMissing", entityClass.getName());
         }
         String tableName = tableNameAnnotation.value();
 
@@ -115,7 +115,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("repository.tableNameMissing", entityClass.getName());
         }
         String tableName = tableNameAnnotation.value();
 
@@ -136,7 +136,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = getEntityClass(context);
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("repository.tableNameMissing", entityClass.getName());
         }
         String tableName = tableNameAnnotation.value();
 
@@ -160,7 +160,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
             }
         }
         if (idFields.isEmpty()) {
-            throw new RepositoryConfigurationException("No @Id annotation found in class " + clazz.getName() + " or its superclasses.");
+            throw new RepositoryConfigurationException("repository.idMissing", clazz.getName());
         }
         return idFields;
     }
@@ -204,7 +204,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("repository.tableNameMissing", entityClass.getName());
         }
         String tableName = tableNameAnnotation.value();
 
@@ -238,7 +238,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
         Class<?> entityClass = entity.getClass();
         TableName tableNameAnnotation = entityClass.getAnnotation(TableName.class);
         if (tableNameAnnotation == null) {
-            throw new RepositoryConfigurationException("Entity class " + entityClass.getName() + " must be annotated with @TableName");
+            throw new RepositoryConfigurationException("repository.tableNameMissing", entityClass.getName());
         }
         String tableName = tableNameAnnotation.value();
 
@@ -275,7 +275,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
      * @param context MyBatisが提供するプロバイダーコンテキスト
      * @return エンティティクラス
      */
-    private Class<?> getEntityClass(ProviderContext context) {
+    protected Class<?> getEntityClass(ProviderContext context) {
         // Every repository is expected to implement BaseRepository<T>; walk the type hierarchy until we find that T.
         for (Class<?> type = context.getMapperType(); type != null; type = type.getSuperclass()) {
             for (Type genericInterface : type.getGenericInterfaces()) {
@@ -285,7 +285,7 @@ public class BaseRepositoryProvider implements ProviderMethodResolver {
                 }
             }
         }
-        throw new RepositoryConfigurationException("Could not determine entity class for " + context.getMapperType().getName());
+        throw new RepositoryConfigurationException("repository.entityClassUnknown", context.getMapperType().getName());
     }
 
     /**

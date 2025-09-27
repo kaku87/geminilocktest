@@ -8,8 +8,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import javax.persistence.Id;
-import java.lang.reflect.Constructor;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -17,19 +15,19 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-// BaseRepositoryProviderが生成するSQLの妥当性を検証するテスト。
-@DisplayName("BaseRepositoryProviderのSQL生成")
+// BaseRepositoryProviderが生成するSQLおよび例外を検証するテスト。
+@DisplayName("BaseRepositoryProviderの振る舞い")
 class BaseRepositoryProviderTest {
 
     private final BaseRepositoryProvider provider = new BaseRepositoryProvider();
 
     @Nested
-    @DisplayName("insert")
-    class Insert {
+    @DisplayName("正常系SQL生成")
+    class NormalSql {
 
         @Test
-        @DisplayName("正常系")
-        void normal() {
+        @DisplayName("INSERT文")
+        void insertGeneratesAllColumns() {
             TestEntity entity = createEntity();
 
             String sql = provider.insert(entity);
@@ -44,88 +42,100 @@ class BaseRepositoryProviderTest {
                 "zzcmn_fdate"
             )), extractColumns(sql));
         }
-    }
-
-    @Nested
-    @DisplayName("update")
-    class Update {
 
         @Test
-        @DisplayName("正常系")
-        void normal() {
+        @DisplayName("UPDATE文")
+        void updateUpdatesMutableColumns() {
             TestEntity entity = createEntity();
 
-            String sql = provider.update(entity);
-            String normalized = squash(sql);
+            String normalized = squash(provider.update(entity));
 
-            assertTrue(normalized.startsWith("UPDATE test_entity"), normalized);
-            assertFalse(normalized.contains("SET id ="), normalized);
-            assertTrue(normalized.contains("zzcmn_fdate = NOW()"), normalized);
+            assertTrue(normalized.startsWith("UPDATE test_entity"));
+            assertTrue(normalized.contains("value = #{value}"));
+            assertTrue(normalized.contains("zzcmn_fname = #{zzcmnFname}"));
+            assertFalse(normalized.contains("zzcmn_cname"));
+            assertTrue(normalized.contains("zzcmn_fdate = NOW()"));
+            assertFalse(normalized.contains("version"));
         }
-    }
-
-    @Nested
-    @DisplayName("delete")
-    class Delete {
 
         @Test
-        @DisplayName("正常系")
-        void normal() {
+        @DisplayName("DELETE文")
+        void deleteUsesPrimaryKeyOnly() {
             TestEntity entity = createEntity();
 
-            String sql = provider.delete(entity);
-            String normalized = squash(sql);
+            String normalized = squash(provider.delete(entity));
 
-            assertTrue(normalized.startsWith("DELETE FROM test_entity"), normalized);
-            assertTrue(normalized.contains("id = #{id}"), normalized);
-            assertFalse(normalized.contains("version"), normalized);
+            assertTrue(normalized.startsWith("DELETE FROM test_entity"));
+            assertTrue(normalized.contains("id = #{id}"));
+            assertFalse(normalized.contains("version"));
         }
-    }
-
-    @Nested
-    @DisplayName("findById")
-    class FindById {
 
         @Test
-        @DisplayName("正常系")
-        void normal() {
+        @DisplayName("SELECT(単体)")
+        void findByIdUsesPrimaryKey() {
             TestEntity entity = createEntity();
 
-            String sql = provider.findById(entity);
-            String normalized = squash(sql);
+            String normalized = squash(provider.findById(entity));
 
-            assertTrue(normalized.startsWith("SELECT * FROM test_entity"), normalized);
-            assertTrue(normalized.contains("id = #{id}"), normalized);
+            assertTrue(normalized.startsWith("SELECT * FROM test_entity"));
+            assertTrue(normalized.contains("id = #{id}"));
         }
-    }
-
-    @Nested
-    @DisplayName("findAll")
-    class FindAll {
 
         @Test
-        @DisplayName("正常系")
-        void normal() {
-            String sql = provider.findAll(ProviderContextFactory.create(DummyRepository.class));
+        @DisplayName("SELECT(全件)")
+        void findAllResolvesEntityClassViaContext() {
+            BaseRepositoryProvider stubProvider = new StubProvider(TestEntity.class);
+
+            String sql = stubProvider.findAll(null);
 
             assertEquals("SELECT * FROM test_entity", squash(sql));
         }
-    }
-
-    @Nested
-    @DisplayName("checkUpdateList")
-    class CheckUpdateList {
 
         @Test
-        @DisplayName("正常系")
-        void normal() {
+        @DisplayName("checkUpdateList")
+        void checkUpdateListUsesLastUpdateTimestamp() {
             TestEntity entity = createEntity();
-            String sql = provider.checkUpdateList(List.of(entity));
-            String normalized = squash(sql);
+
+            String normalized = squash(provider.checkUpdateList(List.of(entity)));
 
             assertTrue(normalized.startsWith("SELECT COUNT(1) FROM test_entity"));
             assertTrue(normalized.contains("id = #{list[0].id}"));
             assertTrue(normalized.contains("zzcmn_fdate = #{list[0].zzcmnFdate}"));
+        }
+    }
+
+    @Nested
+    @DisplayName("異常系")
+    class ExceptionalCases {
+
+        @Test
+        @DisplayName("@TableNameが欠落_異常系")
+        void missingTableName() {
+            NoTableEntity entity = new NoTableEntity();
+            RepositoryConfigurationException ex = assertThrows(RepositoryConfigurationException.class,
+                () -> provider.insert(entity));
+            assertTrue(ex.getMessage().contains(NoTableEntity.class.getName()));
+        }
+
+        @Test
+        @DisplayName("@Idが欠落_異常系")
+        void missingId() {
+            MissingIdEntity entity = new MissingIdEntity();
+            RepositoryConfigurationException ex = assertThrows(RepositoryConfigurationException.class,
+                () -> provider.update(entity));
+            assertTrue(ex.getMessage().contains(MissingIdEntity.class.getName()));
+        }
+
+        @Test
+        @DisplayName("エンティティ解決不可_異常系")
+        void entityClassUnknown() {
+            RepositoryConfigurationException expected = new RepositoryConfigurationException(
+                "repository.entityClassUnknown", "dummy");
+            BaseRepositoryProvider stubProvider = new StubProvider(expected);
+
+            RepositoryConfigurationException ex = assertThrows(RepositoryConfigurationException.class,
+                () -> stubProvider.findAll(null));
+            assertEquals(expected.getMessage(), ex.getMessage());
         }
     }
 
@@ -170,34 +180,38 @@ class BaseRepositoryProviderTest {
         }
     }
 
-    private interface DummyRepository extends BaseRepository<TestEntity> {}
+    private interface TestRepository extends BaseRepository<TestEntity> {}
 
-    /**
-     * MyBatisのProviderContextはパッケージプライベートなコンストラクターしか持たないため、
-     * テストではリフレクションを介して生成するヘルパーを用意する。
-     */
-    private static final class ProviderContextFactory {
-        private static final Constructor<ProviderContext> CONSTRUCTOR;
+    private static class NoTableEntity extends BaseEntity {
+        @Id
+        private Long id;
+    }
 
-        static {
-            try {
-                CONSTRUCTOR = ProviderContext.class
-                    .getDeclaredConstructor(Class.class, java.lang.reflect.Method.class, String.class);
-                CONSTRUCTOR.setAccessible(true);
-            } catch (Exception ex) {
-                throw new IllegalStateException("Failed to prepare ProviderContext constructor", ex);
-            }
+    @TableName("test_entity")
+    private static class MissingIdEntity extends BaseEntity {
+        private String value;
+    }
+
+    private static class StubProvider extends BaseRepositoryProvider {
+        private final Class<?> entityClass;
+        private final RepositoryConfigurationException forcedException;
+
+        StubProvider(Class<?> entityClass) {
+            this.entityClass = entityClass;
+            this.forcedException = null;
         }
 
-        private ProviderContextFactory() {
+        StubProvider(RepositoryConfigurationException forcedException) {
+            this.entityClass = null;
+            this.forcedException = forcedException;
         }
 
-        static ProviderContext create(Class<?> mapperType) {
-            try {
-                return CONSTRUCTOR.newInstance(mapperType, null, null);
-            } catch (Exception ex) {
-                throw new IllegalStateException("Failed to instantiate ProviderContext", ex);
+        @Override
+        protected Class<?> getEntityClass(ProviderContext context) {
+            if (forcedException != null) {
+                throw forcedException;
             }
+            return entityClass;
         }
     }
 }
