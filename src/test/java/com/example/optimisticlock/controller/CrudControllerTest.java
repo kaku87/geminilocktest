@@ -1,8 +1,12 @@
 package com.example.optimisticlock.controller;
 
+import com.example.optimisticlock.annotation.TableName;
 import com.example.optimisticlock.entity.BaseEntity;
 import com.example.optimisticlock.repository.BaseRepository;
 import com.example.optimisticlock.service.CrudService;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -11,6 +15,9 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+
+import javax.persistence.Id;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,7 +32,7 @@ class CrudControllerTest {
         @Test
         @DisplayName("正常系")
         void normal() {
-            StubCrudService service = new StubCrudService();
+            StubCrudService<DummyEntity> service = new StubCrudService<>();
             DummyEntity entity = new DummyEntity();
 
             ResponseEntity<DummyEntity> response = controller(service).create(entity);
@@ -43,7 +50,7 @@ class CrudControllerTest {
         @Test
         @DisplayName("正常系")
         void normal() {
-            StubCrudService service = new StubCrudService();
+            StubCrudService<DummyEntity> service = new StubCrudService<>();
             DummyEntity entity = new DummyEntity();
             service.repository.findByIdResult = entity;
 
@@ -56,7 +63,7 @@ class CrudControllerTest {
         @Test
         @DisplayName("対象未存在_異常系")
         void notFound() {
-            StubCrudService service = new StubCrudService();
+            StubCrudService<DummyEntity> service = new StubCrudService<>();
             DummyEntity entity = new DummyEntity();
             service.repository.findByIdResult = null;
 
@@ -74,7 +81,7 @@ class CrudControllerTest {
         @Test
         @DisplayName("正常系")
         void normal() {
-            StubCrudService service = new StubCrudService();
+            StubCrudService<DummyEntity> service = new StubCrudService<>();
             DummyEntity entity = new DummyEntity();
             List<DummyEntity> entities = Collections.singletonList(entity);
             service.repository.findAllResult = entities;
@@ -93,7 +100,7 @@ class CrudControllerTest {
         @Test
         @DisplayName("正常系")
         void normal() {
-            StubCrudService service = new StubCrudService();
+            StubCrudService<DummyEntity> service = new StubCrudService<>();
             DummyEntity entity = new DummyEntity();
 
             ResponseEntity<DummyEntity> response = controller(service).update(entity);
@@ -111,7 +118,7 @@ class CrudControllerTest {
         @Test
         @DisplayName("正常系")
         void normal() {
-            StubCrudService service = new StubCrudService();
+            StubCrudService<DummyEntity> service = new StubCrudService<>();
             DummyEntity entity = new DummyEntity();
 
             ResponseEntity<Void> response = controller(service).delete(entity);
@@ -122,72 +129,111 @@ class CrudControllerTest {
         }
     }
 
-    private CrudController<DummyEntity> controller(CrudService<DummyEntity, ?> service) {
-        return new CrudController<DummyEntity>() {
-            @Override
-            public CrudService<DummyEntity, ?> getService() {
-                return service;
-            }
-        };
+    @Nested
+    @DisplayName("validation")
+    class ValidationCases {
+
+        private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+
+        @Test
+        @DisplayName("@TableName欠落_異常系")
+        void missingTableName() {
+            NoTableEntity entity = new NoTableEntity();
+
+            Set<ConstraintViolation<NoTableEntity>> violations = validator.validate(entity);
+
+            assertFalse(violations.isEmpty());
+            assertTrue(violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .anyMatch(message -> message.contains("@TableName")));
+        }
+
+        @Test
+        @DisplayName("@Id欠落_異常系")
+        void missingId() {
+            NoIdEntity entity = new NoIdEntity();
+
+            Set<ConstraintViolation<NoIdEntity>> violations = validator.validate(entity);
+
+            assertFalse(violations.isEmpty());
+            assertTrue(violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .anyMatch(message -> message.contains("@Id")));
+        }
     }
 
-    private static class StubCrudService implements CrudService<DummyEntity, BaseRepository<DummyEntity>> {
-        private final StubRepository repository = new StubRepository();
+    private <E extends BaseEntity> CrudController<E> controller(CrudService<E, ?> service) {
+        return () -> service;
+    }
+
+    private static class StubCrudService<E extends BaseEntity> implements CrudService<E, BaseRepository<E>> {
+        private final StubRepository<E> repository = new StubRepository<>();
 
         @Override
-        public BaseRepository<DummyEntity> getRepository() {
+        public BaseRepository<E> getRepository() {
             return repository;
         }
     }
 
-    private static class StubRepository implements BaseRepository<DummyEntity> {
+    private static class StubRepository<E extends BaseEntity> implements BaseRepository<E> {
         boolean insertCalled;
         boolean updateCalled;
         boolean deleteCalled;
-        DummyEntity findByIdResult;
-        List<DummyEntity> findAllResult = Collections.emptyList();
+        E findByIdResult;
+        List<E> findAllResult = Collections.emptyList();
 
         @Override
-        public int insert(DummyEntity entity) {
+        public int insert(E entity) {
             insertCalled = true;
             return 1;
         }
 
         @Override
-        public int update(DummyEntity entity) {
+        public int update(E entity) {
             updateCalled = true;
             return 1;
         }
 
         @Override
-        public int delete(DummyEntity entity) {
+        public int delete(E entity) {
             deleteCalled = true;
             return 1;
         }
 
         @Override
-        public DummyEntity findById(DummyEntity entity) {
+        public E findById(E entity) {
             return findByIdResult;
         }
 
         @Override
-        public List<DummyEntity> findAll() {
+        public List<E> findAll() {
             return findAllResult;
         }
 
         @Override
-        public int checkUpdate(DummyEntity entity) {
+        public int checkUpdate(E entity) {
             return 1;
         }
 
         @Override
-        public int checkUpdateList(List<DummyEntity> entities) {
+        public int checkUpdateList(List<E> entities) {
             return entities.size();
         }
     }
 
+    @TableName("dummy_entity")
     private static class DummyEntity extends BaseEntity {
-        @SuppressWarnings("unused")
+        @Id
         private Long id;
+    }
+
+    private static class NoTableEntity extends BaseEntity {
+        @Id
+        private Long id;
+    }
+
+    @TableName("dummy_entity")
+    private static class NoIdEntity extends BaseEntity {
+        private Long value;
     }
 }

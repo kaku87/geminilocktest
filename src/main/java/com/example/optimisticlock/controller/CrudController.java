@@ -2,6 +2,7 @@ package com.example.optimisticlock.controller;
 
 import com.example.optimisticlock.entity.BaseEntity;
 import com.example.optimisticlock.service.CrudService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,7 @@ public interface CrudController<T extends BaseEntity> {
      * @param entity 登録対象のエンティティ
      * @return 登録後のエンティティとステータス
      */
-    default ResponseEntity<T> create(@RequestBody T entity) {
+    default ResponseEntity<T> create(@Valid @RequestBody T entity) {
         getService().insert(entity);
         return new ResponseEntity<>(entity, HttpStatus.CREATED);
     }
@@ -34,7 +35,7 @@ public interface CrudController<T extends BaseEntity> {
      * @param entity 検索条件を保持したエンティティ
      * @return 該当エンティティまたは404レスポンス
      */
-    default ResponseEntity<T> findById(@RequestBody T entity) {
+    default ResponseEntity<T> findById(@Valid @RequestBody T entity) {
         T foundEntity = getService().findById(entity);
         if (foundEntity != null) {
             return new ResponseEntity<>(foundEntity, HttpStatus.OK);
@@ -58,7 +59,7 @@ public interface CrudController<T extends BaseEntity> {
      * @param entity 更新対象のエンティティ
      * @return 更新結果とステータス
      */
-    default ResponseEntity<T> update(@RequestBody T entity) {
+    default ResponseEntity<T> update(@Valid @RequestBody T entity) {
         getService().update(entity);
         return new ResponseEntity<>(entity, HttpStatus.OK);
     }
@@ -69,7 +70,7 @@ public interface CrudController<T extends BaseEntity> {
      * @param entity 削除対象のエンティティ
      * @return ステータスのみを含むレスポンス
      */
-    default ResponseEntity<Void> delete(@RequestBody T entity) {
+    default ResponseEntity<Void> delete(@Valid @RequestBody T entity) {
         getService().delete(entity);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }

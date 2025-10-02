@@ -1,0 +1,9 @@
+com/example/optimisticlock/controller/CrudControllerTest$Create.class
+com/example/optimisticlock/controller/CrudControllerTest$GetAll.class
+com/example/optimisticlock/controller/CrudControllerTest$Delete.class
+com/example/optimisticlock/controller/CrudControllerTest$DummyEntity.class
+com/example/optimisticlock/controller/CrudControllerTest$Update.class
+com/example/optimisticlock/controller/CrudControllerTest$FindById.class
+com/example/optimisticlock/repository/BaseRepositoryProviderTest$1.class
+com/example/optimisticlock/controller/CrudControllerTest.class
+com/example/optimisticlock/controller/CrudControllerTest$1.class
